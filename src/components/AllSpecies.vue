@@ -4,13 +4,25 @@
 
 <template>
     <v-container fluid class="red lighten-4">
-        {{selected}}
-        <india-map :map_data="data" :selected_state="selected.states" :popup="tooltip" :stateStats="stateStats" @stateSelected="selectState" />
+        <v-row>
+            <v-col cols="12">
+                {{selected}}
+            </v-col>
+        </v-row>
+        <v-row>
+            <v-col cols="6">
+                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" :stateStats="stateStats" @stateSelected="selectState" />
+            </v-col>
+            <v-col cols="6">
+                <taxa-sunburst :tree_data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" />
+            </v-col>
+        </v-row>
     </v-container>
 </template>
 
 <script>
-import IndiaMap from './IndiaMap.vue'
+import IndiaMapHex from './IndiaMapHex.vue'
+import TaxaSunburst from './TaxaSunburst.vue'
 
 
 import * as d3 from "d3";
@@ -19,7 +31,8 @@ import data from "../data/data.json";
 export default {
     name: "AllSpecies",
     components: {
-        IndiaMap
+        IndiaMapHex,
+        TaxaSunburst,
     },
     data() {
         return {
@@ -34,10 +47,8 @@ export default {
     },
     created() {
         console.clear()
-        console.log(this.stateStats);
-        // console.log(this.data[0]);
-        // console.log(this.taxonTree);
         this.init()
+        console.log(data[0])
     },
     computed: {
         taxonTree() {
@@ -90,6 +101,10 @@ export default {
         },
         selectState(s) {
             this.selected.states = [s]
+        },
+        selectTaxa(t) {
+            this.selected.taxa = t
+
         },
     }
 };
