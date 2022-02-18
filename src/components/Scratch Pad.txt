@@ -1,0 +1,25 @@
+//Clean state names
+
+let x = {
+    map: country.features.map((s) => s.properties.ST_NM),
+    data: this.map_data.map((o) => o.place_admin1_name),
+    data_counts: {},
+    data_unmatched:{},
+    map_unmatched:[],
+}
+
+for (const num of x.data) {
+    x.data_counts[num] = x.data_counts[num] ? x.data_counts[num] + 1 : 1;
+}
+Object.keys(x.data_counts).map((ds) => {
+    if(x.map.indexOf(ds) === -1){
+        x.data_unmatched[ds] = x.data_counts[ds]
+    }
+})
+x.map.map((s) => {
+    if(Object.keys(x.data_counts).indexOf(s) === -1){
+        x.map_unmatched.push(s)
+    }
+})
+console.log(x)
+console.log(this.map_data.filter((o) => o.place_admin1_name.length < 2))

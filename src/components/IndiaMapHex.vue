@@ -15,8 +15,7 @@
         stroke: black;
     }
     #map-container .map-states path.state-selected {
-        /*fill: #afa;*/
-        fill: #ccc;
+        fill: #59f !important;
         stroke: rgba(205,105,0,1);
         stroke-width:0.1px;
     }
@@ -98,6 +97,7 @@ export default {
                 hex: null,
                 hex_text: null,
             },
+            svg: null,
             height: 0,
             width: 0,
             h3_zoom: 3,
@@ -108,6 +108,23 @@ export default {
     emits: ["stateSelected"],
     mounted() {
         this.init()
+
+        //cleaning places
+        /*
+        let place_counts = {
+            raw:{},
+            rounded: {},
+        }
+        for (const num of this.map_data.map((o) => `${o.latitude}-${o.longitude}`)) {
+            place_counts.raw[num] = place_counts.raw[num] ? place_counts.raw[num] + 1 : 1;
+        }
+        for (const num of this.map_data.map((o) => `${parseFloat(o.latitude).toFixed(3)}-${parseFloat(o.longitude).toFixed(3)}`)) {
+            place_counts.rounded[num] = place_counts.rounded[num] ? place_counts.rounded[num] + 1 : 1;
+        }
+
+        console.log(place_counts)
+        console.log(this.map_data.length, Object.keys(place_counts.raw).length, Object.keys(place_counts.rounded).length)
+        */
     },
     computed: {
         selected_state() {
@@ -137,10 +154,14 @@ export default {
         },
         filteredData(){
             let op = this.map_data
-            let taxa_levels = ['superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
+            // let taxa_levels = ['superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
+            let taxon_levels = ['class', 'order', 'suborder', 'superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
             this.selected.taxa.map((v,k) => {
-                op = op.filter((o) => o[`taxon_${taxa_levels[k]}_name`] == v)
+                op = op.filter((o) => o[`taxon_${taxon_levels[k]}_name`] === v)
             })
+            if(this.selected.states != 'All'){
+                op = op.filter((o) => this.selected.states.indexOf(o.place_admin1_name) !== -1)
+            }
             
             return op
         },
@@ -177,14 +198,6 @@ export default {
         path() {
             return d3.geoPath().projection(this.projection)
         },
-        svg() {
-            return d3.select("#map-container")
-                        .append("svg")
-                        .attr("preserveAspectRatio", "xMinYMin meet")
-                        .attr("width", this.width)
-                        .attr("height", this.height)
-                        .classed("svg-content d-flex m-auto", true)
-        }
     },
     watch: {
         map_data() {
@@ -193,18 +206,13 @@ export default {
         'selected.states': function (){
             this.mapPoints()
             this.mapHexPoints()
+            
         },
         'selected.taxa': function (){
-            // this.renderMap()
-            alert('hwew')
-            this.mapPoints()
+            this.init()
+            // this.mapPoints()
             // this.mapHexPoints()
         },
-        selected() {
-            console.log("watch")
-            this.mapHexPoints()
-            this.mapPoints()
-        }
     },
     methods:{
         init() {
@@ -249,6 +257,12 @@ export default {
             if (!d3.select("#map-container svg").empty()) {
                 d3.selectAll("#map-container svg").remove()
             }
+            this.svg = d3.select("#map-container")
+                        .append("svg")
+                        .attr("preserveAspectRatio", "xMinYMin meet")
+                        .attr("width", this.width)
+                        .attr("height", this.height)
+                        .classed("svg-content d-flex m-auto", true)
 
             this.svg_layers.states = this.svg.append("g").classed("map-states", true).selectAll("path").append("g")
             this.svg_layers.text = this.svg.append("g").classed("map-text", true).selectAll("text").append("g")
@@ -352,6 +366,7 @@ export default {
                 d3.selectAll("#map-container svg g.map-hex").remove()
                 d3.selectAll("#map-container svg g.map-hex_text").remove()
             }
+            this.h3_hexagons = []
 
             this.svg_layers.hex = this.svg.append("g").classed("map-hex", true).selectAll("path").append("g")
             this.svg_layers.hex_text = this.svg.append("g").classed("map-hex_text", true).selectAll("text").append("g")
@@ -462,7 +477,12 @@ export default {
                     // points.push(o.latitude, o.longitude, o.id, o.place_guess)
                     points.push([o.longitude, o.latitude, o.id, o.place_guess])
                 })
-                
+            } else {
+                this.stateData.map((s) => {
+                    s[1].map((o) => points.push([o.longitude, o.latitude, o.id, o.place_guess]))
+                })
+                // points = 
+                // console.log("SD",this.stateData)
             }
             if(points.length > 0){
                 this.svg.append('g')

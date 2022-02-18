@@ -14,7 +14,7 @@
                 <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" :stateStats="stateStats" @stateSelected="selectState" />
             </v-col>
             <v-col cols="6">
-                <taxa-sunburst :tree_data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" />
+                <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" />
             </v-col>
         </v-row>
     </v-container>
@@ -26,7 +26,7 @@ import TaxaSunburst from './TaxaSunburst.vue'
 
 
 import * as d3 from "d3";
-import data from "../data/data.json";
+import raw_data from "../data/data.json";
 
 export default {
     name: "AllSpecies",
@@ -36,7 +36,7 @@ export default {
     },
     data() {
         return {
-            data: data,
+            data: [],
             tooltip: null,
             selected: {
                 states:["All"],
@@ -48,7 +48,7 @@ export default {
     created() {
         console.clear()
         this.init()
-        console.log(data[0])
+        // console.log(data[0])
     },
     computed: {
         taxonTree() {
@@ -87,6 +87,7 @@ export default {
     },
     methods:{
         init() {
+            this.cleanStateNames()
             this.tooltip = d3.select('body')
                 .append('div')
                 .attr('class', 'd3-tooltip')
@@ -98,6 +99,18 @@ export default {
                 .style('border-radius', '4px')
                 .style('color', '#fff')
                 .text('a simple tooltip')
+        },
+        cleanStateNames() {
+            let fix_names = {
+                'Dadra and Nagar Haveli': 'Dadra and Nagar Haveli and Daman and Diu',
+                'NCT of Delhi': 'Delhi'
+            }
+            this.data = raw_data.map((o) => {
+                if(Object.keys(fix_names).indexOf(o.place_admin1_name) !== -1){
+                    o.place_admin1_name = fix_names[o.place_admin1_name]                    
+                }
+                return o
+            })
         },
         selectState(s) {
             this.selected.states = [s]
