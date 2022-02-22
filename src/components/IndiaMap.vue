@@ -48,7 +48,7 @@ export default {
     name: "IndiaMap",
     props: [
         "map_data",
-        "selected_state",
+        "selected",
         "popup",
     ],
     data() {
@@ -87,11 +87,11 @@ export default {
             }
             return op
         },
-        selected() {
-            return (this.selected_state.length == 0 || this.selected_state[0] == "All") ? "All" : this.selected_state[0]
+        selected_state() {
+            return (this.selected.states.length == 0 || this.selected.states[0] == "All") ? "All" : this.selected.states[0]
         },
         selectedGeoJson() {
-            let state_key = (this.selected !== 'All') ? Object.values(country.features).filter((c) => c.properties.ST_NM === this.selected) : null
+            let state_key = (this.selected_state !== 'All') ? Object.values(country.features).filter((c) => c.properties.ST_NM === this.selected_state) : null
             let op = (state_key === null) ? {properties:{ST_NM: 'All'}} : country.features[state_key]            
             return op
         },
@@ -112,13 +112,12 @@ export default {
         },
         stateData() {
             return d3.groups(this.map_data, (o) =>  o.place_admin1_name)
-                
         },
     },
     watch: {
-        map_data() {
-            this.init()
-        },
+        // map_data() {
+        //     this.init()
+        // },
         selected_state() {
             this.mapPoints()
         }
@@ -208,7 +207,7 @@ export default {
                     })
                     .on('mouseout', () => tooltip.html(``).style('visibility', 'hidden'))
                 
-                if(this.selected === "All") {
+                if(this.selected_state === "All") {
                     base_text.append("g")
                         .data([state])
                         .enter().append("text")
@@ -227,7 +226,7 @@ export default {
                         .on("click", (e,d) => this.clicked(d))
                 }
 
-                if (s_name == this.selected) {
+                if (s_name == this.selected_state) {
                     current_state.classed("state-selected", true)
                 } else {
                     current_state.attr("fill", () => this.colors(no_of_observations))
@@ -271,7 +270,7 @@ export default {
                 [[x0, y0], [x1, y1]] = this.path.bounds(d)
                 d3.select("#" + this.stateID(state)).classed("state-selected", true)
             }
-            if(this.selected == state){
+            if(this.selected_state == state){
                 this.$emit('stateSelected', 'All')
             } else {
                 this.$emit('stateSelected', state)
@@ -292,7 +291,7 @@ export default {
                 d3.selectAll(".map-points").remove()
             }
             
-            if(this.selected != 'All'){
+            if(this.selected_state != 'All'){
                 this.stateData.filter((s) => s[0] === this.selected)[0][1].map((o) => {
                     // points.push(o.latitude, o.longitude, o.id, o.place_guess)
                     points.push([o.longitude, o.latitude, o.id, o.place_guess])

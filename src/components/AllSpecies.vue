@@ -40,7 +40,7 @@ export default {
             tooltip: null,
             selected: {
                 states:["All"],
-                taxa:[],
+                taxa:["Araneae"],
                 dates:[],
             }
         };

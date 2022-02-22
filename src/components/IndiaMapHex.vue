@@ -127,7 +127,7 @@ export default {
     },
     computed: {
         stateStats() {
-            let data = d3.groups(this.map_data, (o) => o.place_admin1_name)
+            let data = d3.groups(this.filteredData, (o) => o.place_admin1_name)
             let op = []
             data.map((s) => {
                 op[s[0]] = {
@@ -147,9 +147,9 @@ export default {
             return (this.selected.states.length == 0 || this.selected.states[0] == "All") ? "All" : this.selected.states[0]
         },
         selectedGeoJson() {
-            let state_key = Object.values(country.features).filter((s) => this.stateName(s) === this.selected_state)
-            let op = (this.selected_state === "All") ? {properties:{ST_NM: 'All'}} : country.features[state_key]
-            return op
+            return (this.selected_state === "All")
+                    ? {properties:{ST_NM: 'All'}}
+                    : Object.values(country.features).filter((s) => this.stateName(s) === this.selected_state)[0]
         },
         zoom() {
             let svg = this.svg
@@ -171,7 +171,8 @@ export default {
         filteredData(){
             let op = this.map_data
             // let taxa_levels = ['superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
-            let taxon_levels = ['class', 'order', 'suborder', 'superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
+            // let taxon_levels = ['class', 'order', 'suborder', 'superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
+            let taxon_levels = ['order', 'superfamily', 'family', 'subfamily', 'tribe', 'genus', 'species']
             this.selected.taxa.map((v,k) => {
                 op = op.filter((o) => o[`taxon_${taxon_levels[k]}_name`] === v)
             })
@@ -222,7 +223,6 @@ export default {
         'selected.states': function (){
             this.mapPoints()
             this.mapHexPoints()
-            
         },
         'selected.taxa': function (){
             this.init()
@@ -344,6 +344,7 @@ export default {
             return s.replaceAll(" ", "_").replaceAll("&", "")
         },
         stateName(state){
+            // console.log(state)
             return state.properties.ST_NM
         },
         clicked(d) {
