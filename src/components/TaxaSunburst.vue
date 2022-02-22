@@ -85,19 +85,7 @@
 </style>
 <template>
     <div>
-        <ul class="breadcrumb text-center">
-            <li v-for="(crumb, i) in breadcrumbs" :key="i">
-                <a
-                    href="#"
-                    :title="`${taxa_levels[i]}: ${crumb}`"
-                    @click="crumbClick(crumb)"
-                    v-text="crumb"
-                />
-            </li>
-        </ul>
         <div id="sunburstChart">
-            <svg preserveAspectRatio="xMinYMin meet" :width="width" :height="height" v-html="chartCode">
-            </svg>
         </div>
         
     </div>
@@ -120,12 +108,14 @@ export default {
                 left: 50,
                 bottom: 50,
             },
+
+            root: null,
             g: null,
             path: null,
             parent: null,
             label: null,
+
             chartCode:null,
-            root: {},
             speciesData: [],
             breadcrumbs: [],
             watch_click: false,
@@ -134,9 +124,20 @@ export default {
         }
     },
     computed: {
+        arc() {
+            return d3
+                .arc()
+                .startAngle((d) => d.x0)
+                .endAngle((d) => d.x1)
+                .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.01))
+                .padRadius(this.radius * 1.5)
+                .innerRadius((d) => d.y0 * this.radius)
+                .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
+        },
         color() {
+            console.log("colors", this.speciesData.children.length + 4)
             return d3.scaleOrdinal(
-                d3.quantize(d3.interpolateWarm, this.speciesData.children.length + 4)
+                d3.quantize(d3.interpolateWarm, this.speciesData.children.length + 1)
             )
         },
         tree_data() {
@@ -166,12 +167,7 @@ export default {
         },
     },
     mounted() {
-        this.chartCode = this.init().innerHTML
-        
-        // console.log(x, typeof(x))
-                        
-
-        // this.crumbClick("Papilionoidea")
+        this.init()
     },
     methods: {
         initTree(data) {
@@ -206,301 +202,118 @@ export default {
                 this.height = window.innerHeight * 0.8
             }
 
-            this.speciesData = this.initTree(this.data.slice(0,5))
-            const root = this.partition(this.speciesData);
-            const radius = d3.min([this.width, this.height])/6
-            console.log(d3.min([this.width, this.height]))
-            this.radius = radius
-            root.each(d => d.current = d);
+            this.speciesData = this.initTree(this.data)
+            this.root = this.partition(this.speciesData);
+            this.radius = d3.min([this.width, this.height])/6
+            this.root.each(d => d.current = d);
             
-            const arc = d3
-                .arc()
-                .startAngle((d) => d.x0)
-                .endAngle((d) => d.x1)
-                .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.01))
-                .padRadius(this.radius * 1.5)
-                .innerRadius((d) => d.y0 * this.radius)
-                .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
+            // const arc = d3
+            //     .arc()
+            //     .startAngle((d) => d.x0)
+            //     .endAngle((d) => d.x1)
+            //     .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.01))
+            //     .padRadius(this.radius * 1.5)
+            //     .innerRadius((d) => d.y0 * this.radius)
+            //     .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
 
-            const svg = d3.create("svg")
-            .attr("viewBox", [0, 0, this.width, this.height])
-            .style("font", "10px sans-serif");
+             if (!d3.select("#sunburstChart svg").empty()) {
+                d3.selectAll("#sunburstChart svg").remove()
+            }
+            const svg = d3.select("#sunburstChart")
+                        .append("svg")
+                        .attr("preserveAspectRatio", "xMinYMin meet")
+                        .attr("width", this.width)
+                        .attr("height", this.height)
+                        .classed("svg-content d-flex m-auto", true)
+            
+            // const svg = d3.create("svg")
+            // .attr("viewBox", [0, 0, this.width, this.height])
+            // .style("font", "10px sans-serif");
 
-            const g = svg.append("g")
-            .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
+            this.g = svg.append("g")
+                .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
 
-            const path = g.append("g")
+            this.path = this.g.append("g")
             .selectAll("path")
-            .data(root.descendants().slice(1))
+            .data(this.root.descendants().slice(1))
             .join("path")
             .attr("fill", d => { while (d.depth > 1) d = d.parent; return this.color(d.data.name); })
-            .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
-            .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+            .attr("fill-opacity", d => this.arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+            .attr("pointer-events", d => this.arcVisible(d.current) ? "auto" : "none")
 
-            .attr("d", d => arc(d.current));
+            .attr("d", d => this.arc(d.current));
 
-            path.filter(d => d.children)
+            this.path.filter(d => d.children)
             .style("cursor", "pointer")
-            .on("click", clicked);
+            .on("click", this.clicked);
 
-            path.append("title")
+            this.path.append("title")
             .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${this.format(d.value)}`);
 
-            const label = g.append("g")
+            this.label = this.g.append("g")
                 .attr("pointer-events", "none")
                 .attr("text-anchor", "middle")
                 .style("user-select", "none")
                 .selectAll("text")
-                .data(root.descendants().slice(1))
+                .data(this.root.descendants().slice(1))
                 .join("text")
                 .attr("dy", "0.35em")
-                // .attr("fill-opacity", d => +labelVisible(d.current))
-                .attr("transform", d => labelTransform(d.current))
+                .attr("fill-opacity", d => +this.labelVisible(d.current))
+                .attr("transform", d => this.labelTransform(d.current))
                 .text(d => d.data.name);
 
-            const parent = g.append("circle")
-            .datum(root)
+            this.parent = this.g.append("circle")
+            .datum(this.root)
             .attr("r", this.radius)
             .attr("fill", "none")
             .attr("pointer-events", "all")
-            .on("click", clicked);
+            .on("click", this.clicked);
 
-            function clicked(event, p) {
-                console.log(event, p)
-                parent.datum(p.parent || root);
-
-                root.each(d => d.target = {
-                    x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-                    x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-                    y0: Math.max(0, d.y0 - p.depth),
-                    y1: Math.max(0, d.y1 - p.depth)
-                });
-
-                const t = g.transition().duration(750);
-
-                // Transition the data on all arcs, even the ones that aren’t visible,
-                // so that if this transition is interrupted, entering arcs will start
-                // the next transition from the desired position.
-                path.transition(t)
-                    .tween("data", d => {
-                        const i = d3.interpolate(d.current, d.target);
-                        return t => d.current = i(t);
-                    })            
-                    .filter(function(d) {
-                        return +this.getAttribute("fill-opacity") || arcVisible(d.target);
-                    })
-                    .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
-                    .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none") 
-                    .attrTween("d", d => () => arc(d.current));
-
-                label.filter(function(d) {
-                    return +this.getAttribute("fill-opacity") || labelVisible(d.target);
-                }).transition(t)
-                    .attr("fill-opacity", d => +labelVisible(d.target))
-                    .attrTween("transform", d => () => labelTransform(d.current));
-            }
-
-            function arcVisible(d) {
-                return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
-            }
-
-            function labelVisible(d) {
-                return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
-            }
-            
-            function labelTransform(d) {
-                const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-                const y = (d.y0 + d.y1) / 2 * radius;
-                return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-            }
-            return svg.node();
         },
-        init_old() {
-            this.width = window.innerWidth * 0.5
-            this.height = window.innerHeight * 0.6
-            if (window.innerWidth < 800) {
-                this.width = window.innerWidth * 2
-                this.height = window.innerHeight * 0.8
-            }
-            this.radius = Math.min(this.height, this.width) * 0.15
-            // let taxon_cols = ['class', 'order', 'suborder', 'superfamily', 'family', 'subfamily', 'tribe', 'subtribe', 'genus', 'species']
-            
-            var speciesTree = this.tree_data.map((o) => {
-                let op = []
-                
-                this.taxa_levels.map((l) => l.toLowerCase().replace("-", ""))
-                    .map((c) => {
-                        let taxa = (o[`taxon_${c}_name`] == '') ? 'Incertae sedis' : o[`taxon_${c}_name`]
-                        op.push(taxa)
-                    })
-                    return op
-            })
-            this.speciesData = this.createTree(speciesTree, "Reset")
-            this.speciesData = this.initTree(this.tree_data)
-            // console.log(this.speciesData)
-            // console.log(this.initTree(this.tree_data))
-            this.root = this.partition(this.speciesData)
-            this.root.each((d) => (d.current = d))
-            this.renderChart()
-        },
-        renderChart() {  
-            if (!d3.select("#sunburstChart svg").empty()) {
-                d3.selectAll("#sunburstChart svg").remove()
-            }
-            const svg = d3
-                .select("#sunburstChart")
-                .append("svg")
-                .classed("bg-light text-center border boorder-primary rounded", true)
-                .attr("viewBox", [0, 0, this.width, this.height])
-            
-            const arc = d3
-                .arc()
-                .startAngle((d) => d.x0)
-                .endAngle((d) => d.x1)
-                .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.01))
-                .padRadius(this.radius * 1.5)
-                .innerRadius((d) => d.y0 * this.radius)
-                .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
-                
-            this.g = svg
-                .append("g")
-                .attr("transform", `translate(${this.width / 2},${this.height / 2})`)
-                
-            this.path = this.g
-                .append("g")
-                .classed("d3-arcs", true)
-                .selectAll("path")
-                .data(this.root.descendants().slice(1))
-                .join("path")
-                .attr("fill", (d) => {
-                    while (d.depth > 2) d = d.parent
-                    return this.color(d.data.name)
+        clicked(event, p) {
+            this.parent.datum(p.parent || this.root);
+
+            this.root.each(d => d.target = {
+                x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                y0: Math.max(0, d.y0 - p.depth),
+                y1: Math.max(0, d.y1 - p.depth)
+            });
+
+            const t = this.g.transition().duration(750);
+            let that = this
+
+            // Transition the data on all arcs, even the ones that aren’t visible,
+            // so that if this transition is interrupted, entering arcs will start
+            // the next transition from the desired position.
+            this.path.transition(t)
+                .tween("data", d => {
+                    const i = d3.interpolate(d.current, d.target);
+                    return t => d.current = i(t);
+                })            
+                .filter(function(d) {
+                    return +this.getAttribute("fill-opacity") || that.arcVisible(d.target);
                 })
-                .attr("fill-opacity", (d) =>
-                    this.arcVisible(d.current) ? (d.children ? 0.3 : 0.1) : 0
-                )
-                .attr("stroke", "white")
-                .attr("stroke-width", (d) =>
-                    this.arcVisible(d.current) ? (d.children ? "1px" : "1px") : "0px"
-                )
-                .attr("d", (d) => arc(d.current))
-                
-            this.path
-                .filter((d) => d.current)
-                .style("cursor", "pointer")
-                // .on("mouseover", () => d3.select(this).classed("taxa-selected", true))
-                // .on("mouseout", () => d3.select(this).classed("taxa-selected", false))
-                .on("click", (e, d) => this.clicked(d))
-                
-            this.path.append("title").text(
-                (d) =>
-                `${d
-                .ancestors()
-                .map((d) => d.data.name)
-                .reverse()
-                .join(" > ")
-                .replace("Reset > ", "")} - ${d.value}`
-            )
-            
-            this.label = this.g
-            .append("g")
-            .classed("d3-arcs-labels", true)
-            .attr("pointer-events", "none")
-            .attr("text-anchor", "middle")
-            // .style("user-select", "none")
-            .selectAll("text")
-            .data(this.root.descendants().slice(1))
-            .join("text")
-            .attr("dy", "0.35em")
-            .attr("fill-opacity", (d) => +this.labelVisible(d.current))
-            .attr("transform", (d) => this.labelTransform(d.current))
-            .text((d) => d.data.name)
-            
-            this.parent = this.g
-                .append("circle")
-                .datum(this.root)
-                .attr("r", this.radius)
-                .attr("fill", "none")
-                .attr("pointer-events", "all")
-                .on("click", (e, d) => this.clicked(d))
-        },
-        clicked(p) {
-            var selected_taxon = p.data.name
-            
-            if (selected_taxon == "Reset") {
-                alert("Root of the Tree")
-                // } else if (p.data.children.length == 0){
-                    //     alert(p.data.name)
-            } else {
-                this.breadcrumbs = this.populate_breadcrumbs(p, [])
-                if (this.watch_click == false) {
-                    this.$emit("taxaSelected", this.breadcrumbs.map(b => b.replace('Incertae sedis', '')))
-                }
-                const arc = d3.arc()
-                        .startAngle((d) => d.x0)
-                        .endAngle((d) => d.x1)
-                        .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.01))
-                        .padRadius(this.radius * 1.5)
-                        .innerRadius((d) => d.y0 * this.radius)
-                        .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
-                
-                this.parent.datum(p.parent || this.root)
-                this.root.each((d) =>
-                    (d.target = {
-                        x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-                        x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-                        y0: Math.max(0, d.y0 - p.depth),
-                        y1: Math.max(0, d.y1 - p.depth),
-                    })
-                )
-                
-                const t = this.g.transition().duration(750)
-                const that = this
-                this.path
-                    .transition(t)
-                    .tween("data", (d) => {
-                        const i = d3.interpolate(d.current, d.target)
-                        return (t) => (d.current = i(t))
-                    })
-                    // .filter((d) => (+d.getAttribute("fill-opacity") || that.arcVisible(d.target)))
-                    .filter((d) => {
-                        console.log(d)
-                    })
-                    .attr("fill-opacity", (d) => that.arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0
-                    )
-                    .attrTween("d", (d) => () => arc(d.current))
-                
-                that.label
-                    .filter((d)  => (+this.getAttribute("fill-opacity") || that.labelVisible(d.target)))
-                    .transition(t)
-                    .attr("fill-opacity", (d) => +that.labelVisible(d.target))
-                    .attrTween("transform", (d) => () => that.labelTransform(d.current))
-            }
+                .attr("fill-opacity", d => that.arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
+                .attr("pointer-events", d => that.arcVisible(d.target) ? "auto" : "none") 
+                .attrTween("d", d => () => that.arc(d.current));
+
+            this.label.filter(function(d) {
+                return +this.getAttribute("fill-opacity") || that.labelVisible(d.target);
+            }).transition(t)
+                .attr("fill-opacity", d => +that.labelVisible(d.target))
+                .attrTween("transform", d => () => that.labelTransform(d.current));
         },
         arcVisible(d) {
-            return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0
+            return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
         },
         labelVisible(d) {
-            return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03
-        },
+            return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+        },            
         labelTransform(d) {
-            const x = (((d.x0 + d.x1) / 2) * 180) / Math.PI
-            const y = ((d.y0 + d.y1) / 2) * this.radius
-            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`
-        },
-        arc() {
-            d3.arc()
-            .startAngle((d) => d.x0)
-            .endAngle((d) => d.x1)
-            .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.005))
-            .padRadius(this.radius * 1.5)
-            .innerRadius((d) => d.y0 * this.radius)
-            .outerRadius((d) => Math.max(d.y0 * this.radius, d.y1 * this.radius))
-
-            // this.data.forEach((d) => {
-            // if (d.species == n) match = d.id
-            // })
-            // return match
+            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+            const y = (d.y0 + d.y1) / 2 * this.radius;
+            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
         },
         format(d) {
             return d3.format(d)
@@ -511,57 +324,7 @@ export default {
                 .sum(() => 1)
                 .sort((a, b) => b.value - a.value)
             return d3.partition().size([2 * Math.PI, this.root.height + 1])(this.root)
-        },
-        createTree(structure, topItem) {
-            const node = (name) => ({ name, children: [] })
-            const addNode = (parent, child) => (parent.children.push(child), child)
-            const findNamedNode = (name, parent) => {
-                for (const child of parent.children) {
-                    if (child.name === name) {
-                        return child
-                    }
-                    const found = findNamedNode(name, child)
-                    if (found) {
-                        return found
-                    }
-                }
-            }
-            const topName = topItem
-            const top = node(topName)
-            var current
-            for (const children of structure) {
-                current = top
-                for (const name of children) {
-                    const found = findNamedNode(name, current)
-                    current = found ? found : addNode(current, node(name, current.name))
-                }
-            }
-            return top
-        },
-        populate_breadcrumbs(p, result) {
-            if (p.data != null && p.data.name != "Reset") {
-                if (p.parent != null) {
-                    result = this.populate_breadcrumbs(p.parent, result)
-                }
-                result.push(p.data.name)
-            }
-            return result
-        },
-        crumbTitle(text, depth) {
-            let taxon = ""
-            //   let rank = taxa_levels[depth]
-            if (text != undefined) {
-                taxon = text.charAt(0).toUpperCase() + text.slice(1) + ": "
-            }
-            return taxon + "-" + depth
-        },
-        crumbClick(text) {
-            this.root.descendants().forEach((a) => {
-                if (a.data.name == text) {
-                    this.clicked(a)
-                }
-            })
-        },
+        },        
     },
 }
 </script>
