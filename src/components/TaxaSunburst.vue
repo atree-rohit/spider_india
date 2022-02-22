@@ -3,12 +3,16 @@
     font-size:0.75rem;
     fill:#222;
 }
+#sunburstChart path,
 .v-breadcrumbs li.breadcrumb-item{
     transition: all 0.25s;
 }
 .v-breadcrumbs li.breadcrumb-item:hover{
     cursor: pointer;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.25);
+}
+#sunburstChart path:hover{
+    fill: #ff0 !important;
 }
 </style>
 <template>

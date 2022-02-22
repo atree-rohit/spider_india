@@ -14,7 +14,20 @@
                 <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" />
             </v-col>
             <v-col cols="6">
-                <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" />
+                <v-row>
+                    <v-col cols="12" class="text-center pa-0">
+                        <v-btn-toggle
+                            v-model='taxa_chart_type'
+                             active-class='green'
+                        >
+                            <v-btn v-for='t in taxa_chart_types' :key="t" v-text="`${t} Chart`" :value="t" />
+                        </v-btn-toggle>
+                    </v-col>
+                    <v-col cols="12" class="pa-0">
+                        <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-if="taxa_chart_type =='Sunburst'" />
+                        <taxa-icicle :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='Icicle'" />
+                    </v-col>
+                </v-row>
             </v-col>
         </v-row>
     </v-container>
@@ -23,6 +36,7 @@
 <script>
 import IndiaMapHex from './IndiaMapHex.vue'
 import TaxaSunburst from './TaxaSunburst.vue'
+import TaxaIcicle from './TaxaIcicle.vue'
 
 
 import * as d3 from "d3";
@@ -33,6 +47,7 @@ export default {
     components: {
         IndiaMapHex,
         TaxaSunburst,
+        TaxaIcicle,
     },
     data() {
         return {
@@ -42,7 +57,10 @@ export default {
                 states:["All"],
                 taxa:["Araneae"],
                 dates:[],
-            }
+            },
+            taxa_chart_type:"",
+            taxa_chart_types:["Sunburst", "Icicle"],
+
         };
     },
     created() {

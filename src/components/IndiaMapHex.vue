@@ -71,7 +71,45 @@
 
 <template>
     <div>
-        <div id="map-container" />
+        <v-row>
+            <v-col cols="12" class="text-center pa-0">
+                <v-btn-toggle
+                    v-model='map_point_type'
+                        active-class='green'
+                >
+                    <v-btn v-for='t in map_point_types' :key="t" v-text="t" :value="t" />
+                </v-btn-toggle>
+            </v-col>
+        </v-row>
+        <v-row v-if='map_point_type === "Points"'>
+            <v-col cols="3">
+                Point Size
+            </v-col>
+            <v-col cols="7">
+                <v-slider
+                    v-model='point_size'
+                    max="5"
+                    min="1"
+                ></v-slider>
+            </v-col>
+            <v-col cols="2">{{point_size}}</v-col>
+        </v-row>
+        <v-row v-else-if='map_point_type === "Hexagons"'>
+            <v-col cols="3">
+                Hexagon Size
+            </v-col>
+            <v-col cols="7">
+                <v-slider
+                    v-model='h3_zoom'
+                    max="15"
+                    min="1"
+                ></v-slider>
+            </v-col>
+            <v-col cols="2">{{h3_zoom}}</v-col>
+        </v-row>
+        <v-row>
+            <div id="map-container" />
+        </v-row>
     </div>
 </template>
 
@@ -100,8 +138,11 @@ export default {
             height: 0,
             width: 0,
             h3_zoom: 3,
+            point_size: 3,
             h3_hexagons: [],
             tooltip:null,
+            map_point_type:'',
+            map_point_types:["Points", "Hexagons"],
         }
     },
     emits: ["stateSelected"],
@@ -165,7 +206,7 @@ export default {
                             .attr('transform', event.transform),
                         svg.selectAll('circle')
                             .attr('transform', event.transform)
-                            .attr("r", 4 / event.transform.k)
+                            .attr("r", this.point_size / event.transform.k)
                     })            
         },
         filteredData(){
@@ -220,6 +261,15 @@ export default {
         map_data() {
             this.init()
         },
+        map_point_type() {            
+            this.init()
+        },
+        h3_zoom() {
+            this.init()
+        },
+        point_size() {
+            this.init()
+        },
         'selected.states': function (){
             this.mapPoints()
             this.mapHexPoints()
@@ -241,12 +291,24 @@ export default {
                 this.width = window.innerWidth * 0.9
             }
 
+            this.clearPoints()
+
             this.renderMap()
             this.initLegend()
             this.clicked(this.selectedGeoJson)
             this.svg.call(this.zoom)
+            
             this.mapHexPoints()
             this.mapPoints()
+        },
+        clearPoints() {
+            if (!d3.select("#map-container .map-points").empty()) {
+                d3.selectAll(".map-points").remove()
+            }
+            if (!d3.select("#map-container svg g.map-hex").empty()) {
+                d3.selectAll("#map-container svg g.map-hex").remove()
+                d3.selectAll("#map-container svg g.map-hex_text").remove()
+            }
         },
         initLegend() {
             
@@ -379,41 +441,35 @@ export default {
             )
         },
         mapHexPoints() {
-            if (!d3.select("#map-container svg g.map-hex").empty()) {
-                d3.selectAll("#map-container svg g.map-hex").remove()
-                d3.selectAll("#map-container svg g.map-hex_text").remove()
-            }
-            this.h3_hexagons = []
-
-            this.svg_layers.hex = this.svg.append("g").classed("map-hex", true).selectAll("path").append("g")
-            this.svg_layers.hex_text = this.svg.append("g").classed("map-hex_text", true).selectAll("text").append("g")
-
-            this.filteredData.map((p) => {
-                const h3Address = geoToH3(p.latitude, p.longitude, this.h3_zoom)
-                let matchID = this.h3_hexagons.findIndex((h) => h.hexID === h3Address)
-                let row = null
-                
-                
-                if(p.taxa_name != null || p.taxa_name != ""){
-                    row = this.parseData(p)
-                }
-
-                if (matchID == -1) {
-                    let h3Geo = this.hexFeatures(h3ToGeoBoundary(h3Address, true))
-                    this.h3_hexagons.push({ "hexID": h3Address, "coordinates": h3Geo, "rows": [row] })
-                }
-                else {
-                    this.h3_hexagons[matchID].rows.push(row)
-                }
-                        
-            })
-            this.h3_hexagons.map((h) => {
-                this.drawHex(h)
-                // if(this.h3_zoom < 4){
-                //     this.drawHexText(h)
-                // }
-            })
-                
+            if(this.map_point_type === "Hexagons") {
+                this.h3_hexagons = []
+    
+                this.svg_layers.hex = this.svg.append("g").classed("map-hex", true).selectAll("path").append("g")
+                this.svg_layers.hex_text = this.svg.append("g").classed("map-hex_text", true).selectAll("text").append("g")
+    
+                this.filteredData.map((p) => {
+                    const h3Address = geoToH3(p.latitude, p.longitude, this.h3_zoom)
+                    let matchID = this.h3_hexagons.findIndex((h) => h.hexID === h3Address)
+                    let row = null
+                    
+                    
+                    if(p.taxa_name != null || p.taxa_name != ""){
+                        row = this.parseData(p)
+                    }
+    
+                    if (matchID == -1) {
+                        let h3Geo = this.hexFeatures(h3ToGeoBoundary(h3Address, true))
+                        this.h3_hexagons.push({ "hexID": h3Address, "coordinates": h3Geo, "rows": [row] })
+                    }
+                    else {
+                        this.h3_hexagons[matchID].rows.push(row)
+                    }
+                            
+                })
+                this.h3_hexagons.map((h) => {
+                    this.drawHex(h)
+                })
+            }                
         },
         drawHex(h){
             let op = this.svg_layers.hex.append("g")
@@ -482,35 +538,34 @@ export default {
             return(h3ToGeo(observation.hexID));
         },
         mapPoints(){
-
-            let points = []
-
-            if (!d3.select("#map-container .map-points").empty()) {
-                d3.selectAll(".map-points").remove()
-            }
-            
-            if(this.selected_state != 'All'){
-                this.stateData.filter((s) => s[0] === this.selected_state)[0][1].map((o) => {
-                    // points.push(o.latitude, o.longitude, o.id, o.place_guess)
-                    points.push([o.longitude, o.latitude, o.id, o.place_guess])
-                })
-            } else {
-                this.stateData.map((s) => {
-                    s[1].map((o) => points.push([o.longitude, o.latitude, o.id, o.place_guess]))
-                })
-                // points = 
-                // console.log("SD",this.stateData)
-            }
-            if(points.length > 0){
-                this.svg.append('g')
-                    .classed('map-points', true)
-                    .selectAll("circle")
-                    .data(points).enter()
-                    .append("circle")
-                    .attr("cx", (d) => this.projection(d)[0])
-                    .attr("cy", (d) => this.projection(d)[1])
-                    .attr("r", "3px")
-                    .on("click", (e,d) => this.gotoObservation(d))
+            if(this.map_point_type === "Points") {
+                let points = []
+                
+                if(this.selected_state != 'All'){
+                    this.stateData.filter((s) => s[0] === this.selected_state)[0][1].map((o) => {
+                        // points.push(o.latitude, o.longitude, o.id, o.place_guess)
+                        points.push([o.longitude, o.latitude, o.id, o.place_guess])
+                    })
+                } else {
+                    this.stateData.map((s) => {
+                        s[1].map((o) => points.push([o.longitude, o.latitude, o.id, o.place_guess]))
+                    })
+                    // points = 
+                    // console.log("SD",this.stateData)
+                }
+                if(points.length > 0){
+                    console.log(`${this.point_size}px`)
+                    this.svg.append('g')
+                        .classed('map-points', true)
+                        .selectAll("circle")
+                        .data(points).enter()
+                        .append("circle")
+                        .attr("cx", (d) => this.projection(d)[0])
+                        .attr("cy", (d) => this.projection(d)[1])
+                        // .attr("r", `${this.point_size}px`)
+                        .attr("r", `1px`)
+                        .on("click", (e,d) => this.gotoObservation(d))
+                }
             }
         },
         gotoObservation(d){
