@@ -11,7 +11,7 @@
         </v-row>
         <v-row>
             <v-col cols="6">
-                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" :stateStats="stateStats" @stateSelected="selectState" />
+                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" />
             </v-col>
             <v-col cols="6">
                 <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" />
@@ -49,41 +49,6 @@ export default {
         console.clear()
         this.init()
         // console.log(data[0])
-    },
-    computed: {
-        taxonTree() {
-            return d3.rollups(
-                this.data,
-                (o) => o.length,
-                (o) => o.taxon_class_name,
-                (o) => o.taxon_order_name,
-                (o) => o.taxon_suborder_name,
-                (o) => o.taxon_superfamily_name,
-                (o) => o.taxon_family_name,
-                (o) => o.taxon_subfamily_name,
-                (o) => o.taxon_tribe_name,
-                (o) => o.taxon_subtribe_name,
-                (o) => o.taxon_genus_name,
-                (o) => o.taxon_species_name
-            );
-        },
-        stateStats() {
-            let data = d3.groups(this.data, (o) => o.place_admin1_name)
-            let op = []
-            data.map((s) => {
-                op[s[0]] = {
-                    observations: s[1].length,
-                    users: new Set(s[1].map((o) => o.user_id)).size,
-                    species:new Set(s[1].map((o) => o.taxon_species_name)).size,
-                }
-            })
-            op["All"] = {
-                observations: 1,
-                users: 1,
-                species: 1,
-            }
-            return op
-        }
     },
     methods:{
         init() {

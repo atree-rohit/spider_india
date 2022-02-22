@@ -87,7 +87,6 @@ export default {
         "map_data",
         "selected",
         "popup",
-        "stateStats"
     ],
     data() {
         return {
@@ -127,6 +126,23 @@ export default {
         */
     },
     computed: {
+        stateStats() {
+            let data = d3.groups(this.map_data, (o) => o.place_admin1_name)
+            let op = []
+            data.map((s) => {
+                op[s[0]] = {
+                    observations: s[1].length,
+                    users: new Set(s[1].map((o) => o.user_id)).size,
+                    species:new Set(s[1].map((o) => o.taxon_species_name)).size,
+                }
+            })
+            op["All"] = {
+                observations: 1,
+                users: 1,
+                species: 1,
+            }
+            return op
+        },
         selected_state() {
             return (this.selected.states.length == 0 || this.selected.states[0] == "All") ? "All" : this.selected.states[0]
         },
