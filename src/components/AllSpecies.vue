@@ -26,6 +26,7 @@
                     <v-col cols="12" class="pa-0">
                         <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-if="taxa_chart_type =='Sunburst'" />
                         <taxa-icicle :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='Icicle'" />
+                        <tree-of-life :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='TreeOfLife'" />
                     </v-col>
                 </v-row>
             </v-col>
@@ -37,6 +38,7 @@
 import IndiaMapHex from './IndiaMapHex.vue'
 import TaxaSunburst from './TaxaSunburst.vue'
 import TaxaIcicle from './TaxaIcicle.vue'
+import TreeOfLife from './TreeOfLife.vue'
 
 
 import * as d3 from "d3";
@@ -48,6 +50,7 @@ export default {
         IndiaMapHex,
         TaxaSunburst,
         TaxaIcicle,
+        TreeOfLife,
     },
     data() {
         return {
@@ -59,7 +62,7 @@ export default {
                 dates:[],
             },
             taxa_chart_type:"",
-            taxa_chart_types:["Sunburst", "Icicle"],
+            taxa_chart_types:["Sunburst", "Icicle", "TreeOfLife"],
 
         };
     },
