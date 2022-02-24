@@ -10,10 +10,10 @@
             </v-col>
         </v-row>
         <v-row>
-            <v-col cols="6">
-                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" />
+            <v-col>
+                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" v-if="false"/>
             </v-col>
-            <v-col cols="6">
+            <v-col>
                 <v-row>
                     <v-col cols="12" class="text-center pa-0">
                         <v-btn-toggle
@@ -61,7 +61,7 @@ export default {
                 taxa:["Araneae"],
                 dates:[],
             },
-            taxa_chart_type:"",
+            taxa_chart_type:"TreeOfLife",
             taxa_chart_types:["Sunburst", "Icicle", "TreeOfLife"],
 
         };
