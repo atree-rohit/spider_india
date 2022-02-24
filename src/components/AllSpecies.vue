@@ -11,7 +11,7 @@
         </v-row>
         <v-row>
             <v-col>
-                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" v-if="false"/>
+                <india-map-hex :map_data="data" :selected="selected" :popup="tooltip" @stateSelected="selectState" v-if="true"/>
             </v-col>
             <v-col>
                 <v-row>
@@ -26,7 +26,7 @@
                     <v-col cols="12" class="pa-0">
                         <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-if="taxa_chart_type =='Sunburst'" />
                         <taxa-icicle :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='Icicle'" />
-                        <tree-of-life :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='TreeOfLife'" />
+                        <tree-of-life :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='Tree of Life'" />
                         <taxa-radial-dendrogram :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='TaxaRadialDendrogram'" />
                     </v-col>
                 </v-row>
@@ -64,8 +64,8 @@ export default {
                 taxa:["Araneae"],
                 dates:[],
             },
-            taxa_chart_type:"TaxaRadialDendrogram",
-            taxa_chart_types:["Sunburst", "Icicle", "TreeOfLife", "TaxaRadialDendrogram"],
+            taxa_chart_type:"Tree of Life",
+            taxa_chart_types:["Sunburst", "Icicle", "Tree of Life", "TaxaRadialDendrogram"],
 
         };
     },
