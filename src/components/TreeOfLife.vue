@@ -67,7 +67,7 @@ export default {
             return d3.scaleOrdinal()
                 // .domain(["Bacteria", "Eukaryota", "Archaea"])
                 .domain([...new Map(this.speciesData.map(item =>
-                                    [item.taxon_superfamily_name, item]))].map((o) => o[0]))
+                                    [item.taxon_family_name, item]))].map((o) => o[0]).filter((n) => n.length > 0))
                 .range(d3.schemeCategory10)
         },
         breadcrumbs() {
@@ -117,23 +117,23 @@ export default {
         },
         init_data() {
             this.speciesData = [...new Map(this.data.map(item =>
-                                    [item.taxon_species_name, item])).values()].slice(0,100)
+                                    [item.taxon_species_name, item])).values()]
 
-            let taxa_levels = ["class","order","suborder","superfamily","family","subfamily","tribe","subtribe","genus"]
+            let taxa_levels = ["class","order","suborder","superfamily","subfamily","tribe","subtribe","genus"]
 
             let x = d3.rollups(
                 this.speciesData,
                 () => 1,
                 (d) => d.taxon_class_name,
-                // (d) => d.taxon_order_name,
-                // (d) => d.taxon_suborder_name,
+                (d) => d.taxon_order_name,
+                (d) => d.taxon_suborder_name,
                 (d) => d.taxon_superfamily_name,
                 (d) => d.taxon_family_name,
-                // (d) => d.taxon_subfamily_name,
-                // (d) => d.taxon_tribe_name,
-                // (d) => d.taxon_subtribe_name,
+                (d) => d.taxon_subfamily_name,
+                (d) => d.taxon_tribe_name,
+                (d) => d.taxon_subtribe_name,
                 (d) => d.taxon_genus_name,
-                (d) => d.taxon_species_name
+                // (d) => d.taxon_species_name
             )
             
             let y = JSON.stringify(x)
@@ -166,7 +166,8 @@ export default {
             // (Arachnida,(Araneae,(Araneomorphae,(Salticoidea,(Salticidae,(Salticinae,(Myrmarachnini,(,(Myrmaplata,(Myrmaplata_plataleoides))))))))))
             
 
-            console.log(y, z)
+            console.log(y)
+            console.log(z)
             
             
         },
