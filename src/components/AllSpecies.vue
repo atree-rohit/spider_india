@@ -27,6 +27,7 @@
                         <taxa-sunburst :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-if="taxa_chart_type =='Sunburst'" />
                         <taxa-icicle :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='Icicle'" />
                         <tree-of-life :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='TreeOfLife'" />
+                        <taxa-radial-dendrogram :data="data" :selected="selected" :popup="tooltip" @taxaSelected="selectTaxa" v-else-if="taxa_chart_type =='TaxaRadialDendrogram'" />
                     </v-col>
                 </v-row>
             </v-col>
@@ -38,6 +39,7 @@
 import IndiaMapHex from './IndiaMapHex.vue'
 import TaxaSunburst from './TaxaSunburst.vue'
 import TaxaIcicle from './TaxaIcicle.vue'
+import TaxaRadialDendrogram from './TaxaRadialDendrogram.vue'
 import TreeOfLife from './TreeOfLife.vue'
 
 
@@ -50,6 +52,7 @@ export default {
         IndiaMapHex,
         TaxaSunburst,
         TaxaIcicle,
+        TaxaRadialDendrogram,
         TreeOfLife,
     },
     data() {
@@ -61,8 +64,8 @@ export default {
                 taxa:["Araneae"],
                 dates:[],
             },
-            taxa_chart_type:"TreeOfLife",
-            taxa_chart_types:["Sunburst", "Icicle", "TreeOfLife"],
+            taxa_chart_type:"TaxaRadialDendrogram",
+            taxa_chart_types:["Sunburst", "Icicle", "TreeOfLife", "TaxaRadialDendrogram"],
 
         };
     },
